@@ -1,0 +1,71 @@
+CREATE DATABASE SoftwareDB;
+USE SoftwareDB;
+
+-- Tabela Funcionário
+CREATE TABLE Funcionario (
+    CPF VARCHAR(14) PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL,
+    Idade INT,
+    Cargo VARCHAR(50) NOT NULL,
+    Salario DECIMAL(10,2)
+);
+
+-- Tabela Designer (Herança de Funcionário)
+CREATE TABLE Designer (
+    CPF VARCHAR(14) PRIMARY KEY,
+    Biblioteca_Designs TEXT,
+    FOREIGN KEY (CPF) REFERENCES Funcionario(CPF) ON DELETE CASCADE
+);
+
+-- Tabela Desenvolvedor de Software (Herança de Funcionário)
+CREATE TABLE DesenvolvedorSoftware (
+    CPF VARCHAR(14) PRIMARY KEY,
+    Stack TEXT,
+    FOREIGN KEY (CPF) REFERENCES Funcionario(CPF) ON DELETE CASCADE
+);
+
+-- Tabela Comercial (Herança de Funcionário)
+CREATE TABLE Comercial (
+    CPF VARCHAR(14) PRIMARY KEY,
+    Nivel_Persuasao INT,
+    FOREIGN KEY (CPF) REFERENCES Funcionario(CPF) ON DELETE CASCADE
+);
+
+-- Tabela Cliente
+CREATE TABLE Cliente (
+    CNPJ VARCHAR(18) PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL,
+    Setor_Atuacao VARCHAR(100)
+);
+
+-- Tabela Software
+CREATE TABLE Software (
+    Codigo INT AUTO_INCREMENT PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL,
+    Stack_Tecnologias TEXT,
+    Data_Inicio DATE,
+    Data_Entrega DATE,
+    Funcionalidades TEXT,
+    Comercial_CPF VARCHAR(14),
+    Cliente_CNPJ VARCHAR(18),
+    FOREIGN KEY (Comercial_CPF) REFERENCES Comercial(CPF) ON DELETE SET NULL,
+    FOREIGN KEY (Cliente_CNPJ) REFERENCES Cliente(CNPJ) ON DELETE CASCADE
+);
+
+-- Tabela Desenvolvimento de Software (Relação N:N entre Desenvolvedor e Software)
+CREATE TABLE DesenvolvimentoSoftware (
+    Desenvolvedor_CPF VARCHAR(14),
+    Software_Codigo INT,
+    PRIMARY KEY (Desenvolvedor_CPF, Software_Codigo),
+    FOREIGN KEY (Desenvolvedor_CPF) REFERENCES DesenvolvedorSoftware(CPF) ON DELETE CASCADE,
+    FOREIGN KEY (Software_Codigo) REFERENCES Software(Codigo) ON DELETE CASCADE
+);
+
+-- Tabela Idealização do Software (Relação N:N entre Designer e Software)
+CREATE TABLE IdealizacaoSoftware (
+    Designer_CPF VARCHAR(14),
+    Software_Codigo INT,
+    PRIMARY KEY (Designer_CPF, Software_Codigo),
+    FOREIGN KEY (Designer_CPF) REFERENCES Designer(CPF) ON DELETE CASCADE,
+    FOREIGN KEY (Software_Codigo) REFERENCES Software(Codigo) ON DELETE CASCADE
+);

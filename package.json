@@ -1,0 +1,26 @@
+{
+  "name": "bancodedados_si",
+  "version": "1.0.0",
+  "description": "Github referente ao projeto de Banco de Dados da cadeira de SI",
+  "main": "db.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rafaelmourato/bancoDeDados_SI.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rafaelmourato/bancoDeDados_SI/issues"
+  },
+  "homepage": "https://github.com/rafaelmourato/bancoDeDados_SI#readme",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0"
+  }
+}
