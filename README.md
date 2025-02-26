@@ -63,16 +63,6 @@ mysql_secure_installation
 1. Acesse o site oficial do Node.js: [Node.js Downloads](https://nodejs.org/).
 2. Baixe a versão recomendada para o seu sistema operacional e siga as instruções do instalador.
 
-#### Inicializando um projeto Node.js
-
-1. Crie uma nova pasta para o seu projeto e navegue até ela no terminal:
-   ```bash
-   mkdir nome-do-projeto
-   cd nome-do-projeto
-
-2. Inicialize um novo projeto Node.js:
-npm init -y
-
 ### Instalando as dependências
 
 Instale as bibliotecas necessárias (express e mysql2) usando o seguinte comando:
@@ -91,7 +81,6 @@ npm install express mysql2 dotenv
    DB_PASSWORD=sua_senha
    DB_NAME=nome_do_banco_de_dados
    DB_PORT=3306
-   PORT=3000
 
 4. Execute o servidor rodando o arquivo com o seguinte comando:
    ```bash
