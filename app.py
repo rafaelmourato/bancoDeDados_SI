@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import pymysql
+import CreatingDatabase
+import PopulatingDatabase
 import os
 from dotenv import load_dotenv
 
