@@ -1,677 +1,1002 @@
-import streamlit as st
-import datetime
-import pandas as pd
-from CRUD import SoftwareDBManager
-
-
-class DatabaseApp:
-    def __init__(self):
-        st.set_page_config(page_title="Software Database Management", layout="wide")
-        st.title("Software Database Management System")
-
-        # Initialize database directly
-        self.db = SoftwareDBManager(host="localhost", user="root", password="password", database="SoftwareDB")
-
-        # Main content - display function selector right away
-        self.display_function_selector()
-
-
-    def display_function_selector(self):
-        # Group functions by category for better organization
-        function_categories = {
-            "Software Management": [
-                "adicionar_software",
-                "atualizar_software",
-                "excluir_software",
-                "obter_stack_tecnologias",
-                "obter_funcionalidades_software",
-                "listar_softwares_concluidos_recentes",
-                "consultar_status_projetos"
-            ],
-            "Employee Management": [
-                "registrar_funcionario",
-                "atualizar_funcionario",
-                "excluir_funcionario",
-                "listar_funcionarios_por_software",
-                "listar_funcionarios_multiplos_projetos",
-                "identificar_funcionarios_sem_projetos"
-            ],
-            "Client Management": [
-                "cadastrar_cliente",
-                "excluir_cliente",
-                "listar_clientes_por_setor",
-                "listar_clientes_multiplos_softwares",
-                "verificar_clientes_sem_softwares"
-            ],
-            "Reports and Analysis": [
-                "listar_softwares_por_cliente",
-                "listar_softwares_por_desenvolvedor",
-                "consultar_softwares_por_comercial",
-                "consultar_biblioteca_designs",
-                "identificar_comerciais_persuasivos",
-                "gerar_relatorio_projetos_por_cliente",
-                "relatorio_atrasos_entrega",
-                "qtd_softwares_por_stack",
-                "relatorio_salarios_por_projeto",
-                "relatorio_uso_tecnologias_desenvolvedores",
-                "analisar_tempo_medio_desenvolvimento",
-                "analisar_produtividade_desenvolvedores",
-                "identificar_stacks_mais_utilizadas",
-                "analisar_desempenho_comerciais",
-                "identificar_setores_lucrativos",
-                "validar_softwares_sem_desenvolvedores",
-                "verificar_integridade_relacionamentos",
-            ],
-            "Associations": [
-                "associar_desenvolvedor_software",
-                "associar_designer_software",
-                "remover_desenvolvedor_software",
-                "remover_designer_software"
-            ]
-        }
-
-        # Create tabs for each category
-        tab_names = list(function_categories.keys())
-        tabs = st.tabs(tab_names)
-
-        for i, tab_name in enumerate(tab_names):
-            with tabs[i]:
-                st.subheader(f"{tab_name} Functions")
-                functions = function_categories[tab_name]
-                selected_function = st.selectbox(
-                    "Select a function",
-                    functions,
-                    key=f"function_select_{tab_name}"
-                )
-
-                st.divider()
-                self.display_function_form(selected_function)
-
-    def display_function_form(self, function_name):
-        st.subheader(f"Form: {function_name}")
-
-        if function_name == "adicionar_software":
-            with st.form("add_software_form"):
-                nome = st.text_input("Nome do Software")
-                stack_tecnologias = st.text_area("Stack de Tecnologias (separadas por vírgula)")
-                data_inicio = st.date_input("Data de Início")
-                data_entrega = st.date_input("Data de Entrega")
-                funcionalidades = st.text_area("Funcionalidades (separadas por vírgula)")
-                comercial_cpf = st.text_input("CPF do Comercial")
-                cliente_cnpj = st.text_input("CNPJ do Cliente")
-
-                submit = st.form_submit_button("Adicionar Software")
-                if submit:
-                    try:
-                        result = self.db.adicionar_software(
-                            nome,
-                            stack_tecnologias,
-                            data_inicio,
-                            data_entrega,
-                            funcionalidades,
-                            comercial_cpf,
-                            cliente_cnpj
-                        )
-                        st.success("Software adicionado com sucesso!")
-                        st.write(result)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "registrar_funcionario":
-            with st.form("register_employee_form"):
-                cpf = st.text_input("CPF")
-                nome = st.text_input("Nome")
-                idade = st.number_input("Idade", min_value=18, max_value=100)
-                cargo = st.selectbox("Cargo", ["Desenvolvedor", "Designer", "Comercial", "Gerente"])
-                salario = st.number_input("Salário", min_value=0.0)
-
-                # Different attributes based on role
-                if cargo == "Desenvolvedor":
-                    atributos = st.text_area("Linguagens de Programação (separadas por vírgula)")
-                elif cargo == "Designer":
-                    atributos = st.text_area("Ferramentas de Design (separadas por vírgula)")
-                elif cargo == "Comercial":
-                    atributos = st.number_input("Nível de Persuasão (1-10)", min_value=1, max_value=10)
-                else:
-                    atributos = st.text_area("Especialidades (separadas por vírgula)")
-
-                submit = st.form_submit_button("Registrar Funcionário")
-                if submit:
-                    try:
-                        result = self.db.registrar_funcionario(cpf, nome, idade, cargo, salario, atributos)
-                        st.success("Funcionário registrado com sucesso!")
-                        st.write(result)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "cadastrar_cliente":
-            with st.form("register_client_form"):
-                cnpj = st.text_input("CNPJ")
-                nome = st.text_input("Nome")
-                setor_atuacao = st.text_input("Setor de Atuação")
-
-                submit = st.form_submit_button("Cadastrar Cliente")
-                if submit:
-                    try:
-                        result = self.db.cadastrar_cliente(cnpj, nome, setor_atuacao)
-                        st.success("Cliente cadastrado com sucesso!")
-                        st.write(result)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "atualizar_software":
-            with st.form("update_software_form"):
-                codigo = st.text_input("Código do Software")
-                nome = st.text_input("Nome do Software (deixe em branco para não alterar)")
-                stack_tecnologias = st.text_area("Stack de Tecnologias (deixe em branco para não alterar)")
-                data_inicio = st.date_input("Data de Início", value=None)
-                data_entrega = st.date_input("Data de Entrega", value=None)
-                funcionalidades = st.text_area("Funcionalidades (deixe em branco para não alterar)")
-
-                submit = st.form_submit_button("Atualizar Software")
-                if submit:
-                    try:
-                        # Convert empty strings to None
-                        nome = None if nome == "" else nome
-                        stack_tecnologias = None if stack_tecnologias == "" else stack_tecnologias
-                        funcionalidades = None if funcionalidades == "" else funcionalidades
-
-                        result = self.db.atualizar_software(
-                            codigo, nome, stack_tecnologias, data_inicio, data_entrega, funcionalidades
-                        )
-                        st.success("Software atualizado com sucesso!")
-                        st.write(result)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "atualizar_funcionario":
-            with st.form("update_employee_form"):
-                cpf = st.text_input("CPF do Funcionário")
-                salario = st.number_input("Novo Salário (deixe 0 para não alterar)", min_value=0.0)
-                cargo = st.text_input("Novo Cargo (deixe em branco para não alterar)")
-                atributos_especificos = st.text_area("Novos Atributos Específicos (deixe em branco para não alterar)")
-
-                submit = st.form_submit_button("Atualizar Funcionário")
-                if submit:
-                    try:
-                        # Convert empty values to None
-                        salario = None if salario == 0 else salario
-                        cargo = None if cargo == "" else cargo
-                        atributos_especificos = None if atributos_especificos == "" else atributos_especificos
-
-                        result = self.db.atualizar_funcionario(cpf, salario, cargo, atributos_especificos)
-                        st.success("Funcionário atualizado com sucesso!")
-                        st.write(result)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "excluir_software":
-            with st.form("delete_software_form"):
-                codigo = st.text_input("Código do Software")
-
-                submit = st.form_submit_button("Excluir Software")
-                if submit:
-                    try:
-                        result = self.db.excluir_software(codigo)
-                        st.success("Software excluído com sucesso!")
-                        st.write(result)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "excluir_funcionario":
-            with st.form("delete_employee_form"):
-                cpf = st.text_input("CPF do Funcionário")
-
-                submit = st.form_submit_button("Excluir Funcionário")
-                if submit:
-                    try:
-                        result = self.db.excluir_funcionario(cpf)
-                        st.success("Funcionário excluído com sucesso!")
-                        st.write(result)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "excluir_cliente":
-            with st.form("delete_client_form"):
-                cnpj = st.text_input("CNPJ do Cliente")
-
-                submit = st.form_submit_button("Excluir Cliente")
-                if submit:
-                    try:
-                        result = self.db.excluir_cliente(cnpj)
-                        st.success("Cliente excluído com sucesso!")
-                        st.write(result)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "listar_softwares_por_cliente":
-            with st.form("list_software_by_client_form"):
-                cliente_cnpj = st.text_input("CNPJ do Cliente")
-
-                submit = st.form_submit_button("Listar Softwares")
-                if submit:
-                    try:
-                        result = self.db.listar_softwares_por_cliente(cliente_cnpj)
-                        st.write("Softwares do Cliente:")
-                        st.write(pd.DataFrame(result))
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "listar_softwares_por_desenvolvedor":
-            with st.form("list_software_by_dev_form"):
-                submit = st.form_submit_button("Listar Softwares por Desenvolvedor")
-                if submit:
-                    try:
-                        result = self.db.listar_softwares_por_desenvolvedor()
-                        st.write("Softwares por Desenvolvedor:")
-                        st.write(pd.DataFrame(result))
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "listar_funcionarios_por_software":
-            with st.form("list_employees_by_software_form"):
-                software_codigo = st.text_input("Código do Software")
-
-                submit = st.form_submit_button("Listar Funcionários")
-                if submit:
-                    try:
-                        result = self.db.listar_funcionarios_por_software(software_codigo)
-                        st.write("Funcionários do Software:")
-                        st.write(pd.DataFrame(result))
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "consultar_softwares_por_comercial":
-            with st.form("software_by_commercial_form"):
-                comercial_cpf = st.text_input("CPF do Comercial")
-
-                submit = st.form_submit_button("Consultar Softwares")
-                if submit:
-                    try:
-                        result = self.db.consultar_softwares_por_comercial(comercial_cpf)
-                        st.write("Softwares do Comercial:")
-                        st.write(pd.DataFrame(result))
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "obter_stack_tecnologias":
-            with st.form("get_tech_stack_form"):
-                software_codigo = st.text_input("Código do Software")
-
-                submit = st.form_submit_button("Obter Stack")
-                if submit:
-                    try:
-                        result = self.db.obter_stack_tecnologias(software_codigo)
-                        st.write("Stack de Tecnologias:")
-                        st.write(result)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-        elif function_name == "listar_clientes_por_setor":
-            with st.form("list_clients_by_sector_form"):
-                # Add a hidden input or a visible one that doesn't affect functionality
-                st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                submit = st.form_submit_button("Listar Clientes por Setor")
-                if submit:
-                    try:
-                        result = self.db.listar_clientes_por_setor()
-                        st.write("Clientes por Setor:")
-                        st.write(pd.DataFrame(result))
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
-                elif function_name == "listar_funcionarios_multiplos_projetos":
-                    with st.form("list_employees_multiple_projects_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Listar Funcionários com Múltiplos Projetos")
-                        if submit:
-                            try:
-                                result = self.db.listar_funcionarios_multiplos_projetos()
-                                st.write("Funcionários com Múltiplos Projetos:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "consultar_biblioteca_designs":
-                    with st.form("consult_design_library_form"):
-                        designer_cpf = st.text_input("CPF do Designer")
-
-                        submit = st.form_submit_button("Consultar Biblioteca de Designs")
-                        if submit:
-                            try:
-                                result = self.db.consultar_biblioteca_designs(designer_cpf)
-                                st.write("Biblioteca de Designs:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "identificar_comerciais_persuasivos":
-                    with st.form("identify_persuasive_commercials_form"):
-                        nivel_minimo = st.number_input("Nível Mínimo de Persuasão", min_value=1, max_value=10, value=7)
-
-                        submit = st.form_submit_button("Identificar Comerciais Persuasivos")
-                        if submit:
-                            try:
-                                result = self.db.identificar_comerciais_persuasivos(nivel_minimo)
-                                st.write("Comerciais Persuasivos:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "obter_funcionalidades_software":
-                    with st.form("get_software_features_form"):
-                        software_codigo = st.text_input("Código do Software")
-
-                        submit = st.form_submit_button("Obter Funcionalidades")
-                        if submit:
-                            try:
-                                result = self.db.obter_funcionalidades_software(software_codigo)
-                                st.write("Funcionalidades do Software:")
-                                st.write(result)
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "gerar_relatorio_projetos_por_cliente":
-                    with st.form("report_projects_by_client_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Gerar Relatório")
-                        if submit:
-                            try:
-                                result = self.db.gerar_relatorio_projetos_por_cliente()
-                                st.write("Relatório de Projetos por Cliente:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "relatorio_atrasos_entrega":
-                    with st.form("report_delivery_delays_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Gerar Relatório de Atrasos")
-                        if submit:
-                            try:
-                                result = self.db.relatorio_atrasos_entrega()
-                                st.write("Relatório de Atrasos na Entrega:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "qtd_softwares_por_stack":
-                    with st.form("qty_software_by_stack_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Gerar Relatório")
-                        if submit:
-                            try:
-                                result = self.db.qtd_softwares_por_stack()
-                                st.write("Quantidade de Softwares por Stack:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "relatorio_salarios_por_projeto":
-                    with st.form("report_salaries_by_project_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Gerar Relatório de Salários")
-                        if submit:
-                            try:
-                                result = self.db.relatorio_salarios_por_projeto()
-                                st.write("Relatório de Salários por Projeto:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "listar_clientes_multiplos_softwares":
-                    with st.form("list_clients_multiple_software_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Listar Clientes com Múltiplos Softwares")
-                        if submit:
-                            try:
-                                result = self.db.listar_clientes_multiplos_softwares()
-                                st.write("Clientes com Múltiplos Softwares:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "relatorio_uso_tecnologias_desenvolvedores":
-                    with st.form("report_tech_usage_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Gerar Relatório")
-                        if submit:
-                            try:
-                                result = self.db.relatorio_uso_tecnologias_desenvolvedores()
-                                st.write("Relatório de Uso de Tecnologias por Desenvolvedores:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "listar_softwares_concluidos_recentes":
-                    st.write("Debug: Function matched")
-                    with st.form("list_recent_completed_software_form"):
-                        st.write("Debug: Function matched")
-                        meses = st.number_input("Número de Meses", min_value=1, max_value=36, value=6)
-
-                        submit = st.form_submit_button("Listar Softwares Concluídos")
-                        if submit:
-                            try:
-                                result = self.db.listar_softwares_concluidos_recentes(meses)
-                                st.write("Softwares Concluídos Recentemente:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "analisar_tempo_medio_desenvolvimento":
-                    with st.form("analyze_avg_development_time_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Analisar Tempo Médio")
-                        if submit:
-                            try:
-                                result = self.db.analisar_tempo_medio_desenvolvimento()
-                                st.write("Análise de Tempo Médio de Desenvolvimento:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "analisar_produtividade_desenvolvedores":
-                    with st.form("analyze_developer_productivity_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Analisar Produtividade")
-                        if submit:
-                            try:
-                                result = self.db.analisar_produtividade_desenvolvedores()
-                                st.write("Análise de Produtividade dos Desenvolvedores:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "identificar_stacks_mais_utilizadas":
-                    with st.form("identify_most_used_stacks_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Identificar Stacks Mais Utilizadas")
-                        if submit:
-                            try:
-                                result = self.db.identificar_stacks_mais_utilizadas()
-                                st.write("Stacks Mais Utilizadas:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "analisar_desempenho_comerciais":
-                    with st.form("analyze_commercial_performance_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Analisar Desempenho")
-                        if submit:
-                            try:
-                                result = self.db.analisar_desempenho_comerciais()
-                                st.write("Análise de Desempenho dos Comerciais:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "identificar_setores_lucrativos":
-                    with st.form("identify_profitable_sectors_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Identificar Setores Lucrativos")
-                        if submit:
-                            try:
-                                result = self.db.identificar_setores_lucrativos()
-                                st.write("Setores Lucrativos:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "validar_softwares_sem_desenvolvedores":
-                    with st.form("validate_software_no_developers_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Validar Softwares")
-                        if submit:
-                            try:
-                                result = self.db.validar_softwares_sem_desenvolvedores()
-                                st.write("Softwares sem Desenvolvedores:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "verificar_clientes_sem_softwares":
-                    with st.form("verify_clients_no_software_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Verificar Clientes")
-                        if submit:
-                            try:
-                                result = self.db.verificar_clientes_sem_softwares()
-                                st.write("Clientes sem Softwares:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "identificar_funcionarios_sem_projetos":
-                    with st.form("identify_employees_no_projects_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Identificar Funcionários")
-                        if submit:
-                            try:
-                                result = self.db.identificar_funcionarios_sem_projetos()
-                                st.write("Funcionários sem Projetos:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "verificar_integridade_relacionamentos":
-                    with st.form("verify_relationship_integrity_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Verificar Integridade")
-                        if submit:
-                            try:
-                                result = self.db.verificar_integridade_relacionamentos()
-                                st.write("Relatório de Integridade dos Relacionamentos:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "consultar_status_projetos":
-                    with st.form("consult_project_status_form"):
-                        # Add a hidden input or a visible one that doesn't affect functionality
-                        st.text_input("", "", key="hidden_input", label_visibility="collapsed")
-
-                        submit = st.form_submit_button("Consultar Status")
-                        if submit:
-                            try:
-                                result = self.db.consultar_status_projetos()
-                                st.write("Status dos Projetos:")
-                                st.write(pd.DataFrame(result))
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "associar_desenvolvedor_software":
-                    with st.form("associate_developer_software_form"):
-                        desenvolvedor_cpf = st.text_input("CPF do Desenvolvedor")
-                        software_codigo = st.text_input("Código do Software")
-
-                        submit = st.form_submit_button("Associar Desenvolvedor")
-                        if submit:
-                            try:
-                                result = self.db.associar_desenvolvedor_software(desenvolvedor_cpf, software_codigo)
-                                st.success("Desenvolvedor associado com sucesso!")
-                                st.write(result)
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "associar_designer_software":
-                    with st.form("associate_designer_software_form"):
-                        designer_cpf = st.text_input("CPF do Designer")
-                        software_codigo = st.text_input("Código do Software")
-
-                        submit = st.form_submit_button("Associar Designer")
-                        if submit:
-                            try:
-                                result = self.db.associar_designer_software(designer_cpf, software_codigo)
-                                st.success("Designer associado com sucesso!")
-                                st.write(result)
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "remover_desenvolvedor_software":
-                    with st.form("remove_developer_software_form"):
-                        desenvolvedor_cpf = st.text_input("CPF do Desenvolvedor")
-                        software_codigo = st.text_input("Código do Software")
-
-                        submit = st.form_submit_button("Remover Desenvolvedor")
-                        if submit:
-                            try:
-                                result = self.db.remover_desenvolvedor_software(desenvolvedor_cpf, software_codigo)
-                                st.success("Desenvolvedor removido com sucesso!")
-                                st.write(result)
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                elif function_name == "remover_designer_software":
-                    with st.form("remove_designer_software_form"):
-                        designer_cpf = st.text_input("CPF do Designer")
-                        software_codigo = st.text_input("Código do Software")
-
-                        submit = st.form_submit_button("Remover Designer")
-                        if submit:
-                            try:
-                                result = self.db.remover_designer_software(designer_cpf, software_codigo)
-                                st.success("Designer removido com sucesso!")
-                                st.write(result)
-                            except Exception as e:
-                                st.error(f"Erro: {str(e)}")
-
-                # Database simulation class - replace with your actual database implementation
-
-
-# Run the app
+import pymysql
+from datetime import datetime, timedelta
+
+
+class SoftwareDBManager:
+    def __init__(self, host='localhost', user='root', password='password', database='SoftwareDB'):
+        self.connection = pymysql.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+            cursorclass=pymysql.cursors.DictCursor
+        )
+
+    def __del__(self):
+        if hasattr(self, 'connection') and self.connection:
+            self.connection.close()
+
+    # =============================================
+    # CRUD Operations (Create, Read, Update, Delete)
+    # =============================================
+
+    # 1. Add new software to the database
+    def adicionar_software(self, nome, stack_tecnologias, data_inicio, data_entrega,
+                           funcionalidades, comercial_cpf, cliente_cnpj):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                INSERT INTO Software (Nome, Stack_Tecnologias, Data_Inicio, Data_Entrega, 
+                                     Funcionalidades, Comercial_CPF, Cliente_CNPJ)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql, (nome, stack_tecnologias, data_inicio, data_entrega,
+                                     funcionalidades, comercial_cpf, cliente_cnpj))
+                self.connection.commit()
+                return cursor.lastrowid
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao adicionar software: {str(e)}")
+
+    # 2. Register a new employee
+    def registrar_funcionario(self, cpf, nome, idade, cargo, salario, atributos_especificos):
+        try:
+            with self.connection.cursor() as cursor:
+                # Insert into base employee table
+                sql_funcionario = """
+                INSERT INTO Funcionario (CPF, Nome, Idade, Cargo, Salario)
+                VALUES (%s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql_funcionario, (cpf, nome, idade, cargo, salario))
+
+                # Insert into specific role table based on cargo
+                if cargo.lower() == 'designer':
+                    sql_especifico = """
+                    INSERT INTO Designer (CPF, Biblioteca_Designs)
+                    VALUES (%s, %s)
+                    """
+                    cursor.execute(sql_especifico, (cpf, atributos_especificos.get('biblioteca_designs', '')))
+
+                elif cargo.lower() == 'desenvolvedor':
+                    sql_especifico = """
+                    INSERT INTO DesenvolvedorSoftware (CPF, Stack)
+                    VALUES (%s, %s)
+                    """
+                    cursor.execute(sql_especifico, (cpf, atributos_especificos.get('stack', '')))
+
+                elif cargo.lower() == 'comercial':
+                    sql_especifico = """
+                    INSERT INTO Comercial (CPF, Nivel_Persuasao)
+                    VALUES (%s, %s)
+                    """
+                    cursor.execute(sql_especifico, (cpf, atributos_especificos.get('nivel_persuasao', 0)))
+
+                self.connection.commit()
+                return cpf
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao registrar funcionário: {str(e)}")
+
+    # 3. Register a new client
+    def cadastrar_cliente(self, cnpj, nome, setor_atuacao):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                INSERT INTO Cliente (CNPJ, Nome, Setor_Atuacao)
+                VALUES (%s, %s, %s)
+                """
+                cursor.execute(sql, (cnpj, nome, setor_atuacao))
+                self.connection.commit()
+                return cnpj
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao cadastrar cliente: {str(e)}")
+
+    # 4. Update software information
+    def atualizar_software(self, codigo, nome=None, stack_tecnologias=None,
+                           data_inicio=None, data_entrega=None, funcionalidades=None):
+        try:
+            with self.connection.cursor() as cursor:
+                updates = []
+                params = []
+
+                if nome is not None:
+                    updates.append("Nome = %s")
+                    params.append(nome)
+                if stack_tecnologias is not None:
+                    updates.append("Stack_Tecnologias = %s")
+                    params.append(stack_tecnologias)
+                if data_inicio is not None:
+                    updates.append("Data_Inicio = %s")
+                    params.append(data_inicio)
+                if data_entrega is not None:
+                    updates.append("Data_Entrega = %s")
+                    params.append(data_entrega)
+                if funcionalidades is not None:
+                    updates.append("Funcionalidades = %s")
+                    params.append(funcionalidades)
+
+                if not updates:
+                    return False
+
+                sql = f"UPDATE Software SET {', '.join(updates)} WHERE Codigo = %s"
+                params.append(codigo)
+
+                cursor.execute(sql, params)
+                self.connection.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao atualizar software: {str(e)}")
+
+    # 5. Update employee data
+    def atualizar_funcionario(self, cpf, salario=None, cargo=None, atributos_especificos=None):
+        try:
+            with self.connection.cursor() as cursor:
+                # Update base employee table
+                updates = []
+                params = []
+
+                if salario is not None:
+                    updates.append("Salario = %s")
+                    params.append(salario)
+                if cargo is not None:
+                    updates.append("Cargo = %s")
+                    params.append(cargo)
+
+                if updates:
+                    sql_funcionario = f"UPDATE Funcionario SET {', '.join(updates)} WHERE CPF = %s"
+                    params.append(cpf)
+                    cursor.execute(sql_funcionario, params)
+
+                # Update specific role attributes if provided
+                if atributos_especificos:
+                    # First, determine the current role
+                    sql_cargo = "SELECT Cargo FROM Funcionario WHERE CPF = %s"
+                    cursor.execute(sql_cargo, (cpf,))
+                    result = cursor.fetchone()
+
+                    if not result:
+                        raise Exception(f"Funcionário com CPF {cpf} não encontrado")
+
+                    current_cargo = cargo or result['Cargo']
+
+                    if current_cargo.lower() == 'designer' and 'biblioteca_designs' in atributos_especificos:
+                        sql_especifico = """
+                        UPDATE Designer SET Biblioteca_Designs = %s WHERE CPF = %s
+                        """
+                        cursor.execute(sql_especifico, (atributos_especificos['biblioteca_designs'], cpf))
+
+                    elif current_cargo.lower() == 'desenvolvedor' and 'stack' in atributos_especificos:
+                        sql_especifico = """
+                        UPDATE DesenvolvedorSoftware SET Stack = %s WHERE CPF = %s
+                        """
+                        cursor.execute(sql_especifico, (atributos_especificos['stack'], cpf))
+
+                    elif current_cargo.lower() == 'comercial' and 'nivel_persuasao' in atributos_especificos:
+                        sql_especifico = """
+                        UPDATE Comercial SET Nivel_Persuasao = %s WHERE CPF = %s
+                        """
+                        cursor.execute(sql_especifico, (atributos_especificos['nivel_persuasao'], cpf))
+
+                self.connection.commit()
+                return True
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao atualizar funcionário: {str(e)}")
+
+    # 6. Delete a software
+    def excluir_software(self, codigo):
+        try:
+            with self.connection.cursor() as cursor:
+                # Check if software exists
+                check_sql = "SELECT Codigo FROM Software WHERE Codigo = %s"
+                cursor.execute(check_sql, (codigo,))
+                if not cursor.fetchone():
+                    return False
+
+                # Delete the software (other tables with foreign keys will be handled by ON DELETE constraints)
+                sql = "DELETE FROM Software WHERE Codigo = %s"
+                cursor.execute(sql, (codigo,))
+                self.connection.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao excluir software: {str(e)}")
+
+    # 7. Delete an employee
+    def excluir_funcionario(self, cpf):
+        try:
+            with self.connection.cursor() as cursor:
+                # Check if employee exists
+                check_sql = "SELECT CPF FROM Funcionario WHERE CPF = %s"
+                cursor.execute(check_sql, (cpf,))
+                if not cursor.fetchone():
+                    return False
+
+                # Delete the employee (cascade will handle child tables)
+                sql = "DELETE FROM Funcionario WHERE CPF = %s"
+                cursor.execute(sql, (cpf,))
+                self.connection.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao excluir funcionário: {str(e)}")
+
+    # 8. Delete a client and all associated software
+    def excluir_cliente(self, cnpj):
+        try:
+            with self.connection.cursor() as cursor:
+                # Check if client exists
+                check_sql = "SELECT CNPJ FROM Cliente WHERE CNPJ = %s"
+                cursor.execute(check_sql, (cnpj,))
+                if not cursor.fetchone():
+                    return False
+
+                # Delete the client (ON DELETE CASCADE will handle related software)
+                sql = "DELETE FROM Cliente WHERE CNPJ = %s"
+                cursor.execute(sql, (cnpj,))
+                self.connection.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao excluir cliente: {str(e)}")
+
+    # =============================================
+    # Informative Queries
+    # =============================================
+
+    # 9. List all software developed for a specific client
+    def listar_softwares_por_cliente(self, cliente_cnpj):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT s.Codigo, s.Nome, s.Stack_Tecnologias, s.Data_Inicio, s.Data_Entrega, 
+                       s.Funcionalidades, c.Nome as Cliente_Nome
+                FROM Software s
+                JOIN Cliente c ON s.Cliente_CNPJ = c.CNPJ
+                WHERE s.Cliente_CNPJ = %s
+                """
+                cursor.execute(sql, (cliente_cnpj,))
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao listar softwares por cliente: {str(e)}")
+
+    # 10. List software under development by each employee
+    def listar_softwares_por_desenvolvedor(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT ds.Desenvolvedor_CPF, f.Nome as Desenvolvedor_Nome, 
+                       s.Codigo as Software_Codigo, s.Nome as Software_Nome
+                FROM DesenvolvimentoSoftware ds
+                JOIN DesenvolvedorSoftware d ON ds.Desenvolvedor_CPF = d.CPF
+                JOIN Funcionario f ON d.CPF = f.CPF
+                JOIN Software s ON ds.Software_Codigo = s.Codigo
+                ORDER BY ds.Desenvolvedor_CPF
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao listar softwares por desenvolvedor: {str(e)}")
+
+    # 11. List employees involved in the development of a specific software
+    def listar_funcionarios_por_software(self, software_codigo):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                (SELECT f.CPF, f.Nome, f.Cargo, 'Desenvolvedor' as Tipo_Envolvimento
+                 FROM Funcionario f
+                 JOIN DesenvolvedorSoftware d ON f.CPF = d.CPF
+                 JOIN DesenvolvimentoSoftware ds ON d.CPF = ds.Desenvolvedor_CPF
+                 WHERE ds.Software_Codigo = %s)
+                UNION
+                (SELECT f.CPF, f.Nome, f.Cargo, 'Designer' as Tipo_Envolvimento
+                 FROM Funcionario f
+                 JOIN Designer des ON f.CPF = des.CPF
+                 JOIN IdealizacaoSoftware i ON des.CPF = i.Designer_CPF
+                 WHERE i.Software_Codigo = %s)
+                """
+                cursor.execute(sql, (software_codigo, software_codigo))
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao listar funcionários por software: {str(e)}")
+
+    # 12. Query all software sold by a sales employee
+    def consultar_softwares_por_comercial(self, comercial_cpf):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT s.Codigo, s.Nome, s.Data_Inicio, s.Data_Entrega, 
+                       c.Nome as Cliente_Nome, c.CNPJ as Cliente_CNPJ
+                FROM Software s
+                JOIN Cliente c ON s.Cliente_CNPJ = c.CNPJ
+                WHERE s.Comercial_CPF = %s
+                """
+                cursor.execute(sql, (comercial_cpf,))
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao consultar softwares por comercial: {str(e)}")
+
+    # 13. Get the technology stack needed for software development
+    def obter_stack_tecnologias(self, software_codigo):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = "SELECT Stack_Tecnologias FROM Software WHERE Codigo = %s"
+                cursor.execute(sql, (software_codigo,))
+                result = cursor.fetchone()
+                return result['Stack_Tecnologias'] if result else None
+        except Exception as e:
+            raise Exception(f"Erro ao obter stack de tecnologias: {str(e)}")
+
+    # 14. List clients by business sector
+    def listar_clientes_por_setor(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                    SELECT Setor_Atuacao, GROUP_CONCAT(CNPJ) as CNPJs, 
+                           GROUP_CONCAT(Nome) as Nomes, COUNT(*) as Total
+                    FROM Cliente
+                    GROUP BY Setor_Atuacao
+                    """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao listar clientes por setor: {str(e)}")
+
+    # 15. List all designers or developers with more than one software designed/developed
+    def listar_funcionarios_multiplos_projetos(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                (SELECT f.CPF, f.Nome, f.Cargo, COUNT(ds.Software_Codigo) as Quantidade_Projetos
+                 FROM Funcionario f
+                 JOIN DesenvolvedorSoftware d ON f.CPF = d.CPF
+                 JOIN DesenvolvimentoSoftware ds ON d.CPF = ds.Desenvolvedor_CPF
+                 GROUP BY f.CPF
+                 HAVING COUNT(ds.Software_Codigo) > 1)
+                UNION
+                (SELECT f.CPF, f.Nome, f.Cargo, COUNT(i.Software_Codigo) as Quantidade_Projetos
+                 FROM Funcionario f
+                 JOIN Designer des ON f.CPF = des.CPF
+                 JOIN IdealizacaoSoftware i ON des.CPF = i.Designer_CPF
+                 GROUP BY f.CPF
+                 HAVING COUNT(i.Software_Codigo) > 1)
+                ORDER BY Quantidade_Projetos DESC
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao listar funcionários com múltiplos projetos: {str(e)}")
+
+    # 16. Query the design library of a specific designer
+    def consultar_biblioteca_designs(self, designer_cpf):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT d.Biblioteca_Designs, f.Nome 
+                FROM Designer d
+                JOIN Funcionario f ON d.CPF = f.CPF
+                WHERE d.CPF = %s
+                """
+                cursor.execute(sql, (designer_cpf,))
+                return cursor.fetchone()
+        except Exception as e:
+            raise Exception(f"Erro ao consultar biblioteca de designs: {str(e)}")
+
+    # 17. Identify sales employees with high persuasion level
+    def identificar_comerciais_persuasivos(self, nivel_minimo=7):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT c.CPF, f.Nome, c.Nivel_Persuasao
+                FROM Comercial c
+                JOIN Funcionario f ON c.CPF = f.CPF
+                WHERE c.Nivel_Persuasao >= %s
+                ORDER BY c.Nivel_Persuasao DESC
+                """
+                cursor.execute(sql, (nivel_minimo,))
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao identificar comerciais persuasivos: {str(e)}")
+
+    # 18. Get the list of features of a software
+    def obter_funcionalidades_software(self, software_codigo):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = "SELECT Funcionalidades FROM Software WHERE Codigo = %s"
+                cursor.execute(sql, (software_codigo,))
+                result = cursor.fetchone()
+                return result['Funcionalidades'] if result else None
+        except Exception as e:
+            raise Exception(f"Erro ao obter funcionalidades do software: {str(e)}")
+
+    # =============================================
+    # Report Queries
+    # =============================================
+
+    # 19. Generate a project report by client
+    def gerar_relatorio_projetos_por_cliente(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT c.CNPJ, c.Nome as Cliente_Nome, c.Setor_Atuacao, 
+                       s.Codigo as Software_Codigo, s.Nome as Software_Nome,
+                       s.Data_Inicio, s.Data_Entrega,
+                       CASE 
+                           WHEN CURDATE() > s.Data_Entrega THEN 'Atrasado'
+                           WHEN s.Data_Entrega IS NULL THEN 'Em Definição'
+                           WHEN CURDATE() = s.Data_Entrega THEN 'Entrega Hoje'
+                           ELSE 'Em Andamento' 
+                       END as Status,
+                       com.CPF as Comercial_CPF,
+                       (SELECT GROUP_CONCAT(f.Nome) 
+                        FROM Funcionario f 
+                        JOIN DesenvolvedorSoftware d ON f.CPF = d.CPF
+                        JOIN DesenvolvimentoSoftware ds ON d.CPF = ds.Desenvolvedor_CPF
+                        WHERE ds.Software_Codigo = s.Codigo) as Desenvolvedores,
+                       (SELECT GROUP_CONCAT(f.Nome) 
+                        FROM Funcionario f 
+                        JOIN Designer des ON f.CPF = des.CPF
+                        JOIN IdealizacaoSoftware i ON des.CPF = i.Designer_CPF
+                        WHERE i.Software_Codigo = s.Codigo) as Designers
+                FROM Cliente c
+                LEFT JOIN Software s ON c.CNPJ = s.Cliente_CNPJ
+                LEFT JOIN Comercial com ON s.Comercial_CPF = com.CPF
+                ORDER BY c.Nome, s.Nome
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao gerar relatório de projetos por cliente: {str(e)}")
+
+    # 20. Report on delays in software delivery
+    def relatorio_atrasos_entrega(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT s.Codigo, s.Nome as Software_Nome, 
+                       s.Data_Inicio, s.Data_Entrega,
+                       DATEDIFF(CURDATE(), s.Data_Entrega) as Dias_Atraso,
+                       c.Nome as Cliente_Nome, c.CNPJ,
+                       fc.Nome as Comercial_Nome,
+                       (SELECT GROUP_CONCAT(f.Nome) 
+                        FROM Funcionario f 
+                        JOIN DesenvolvedorSoftware d ON f.CPF = d.CPF
+                        JOIN DesenvolvimentoSoftware ds ON d.CPF = ds.Desenvolvedor_CPF
+                        WHERE ds.Software_Codigo = s.Codigo) as Desenvolvedores
+                FROM Software s
+                JOIN Cliente c ON s.Cliente_CNPJ = c.CNPJ
+                LEFT JOIN Comercial com ON s.Comercial_CPF = com.CPF
+                LEFT JOIN Funcionario fc ON com.CPF = fc.CPF
+                WHERE s.Data_Entrega < CURDATE()
+                ORDER BY Dias_Atraso DESC
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao gerar relatório de atrasos na entrega: {str(e)}")
+
+    # 21. Get the number of software by technology stack
+    def qtd_softwares_por_stack(self):
+        try:
+            with self.connection.cursor() as cursor:
+                # This query assumes stack technologies are separated by commas
+                sql = """
+                SELECT 
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(t.Stack_Item, ',', n.n), ',', -1) as Tecnologia,
+                    COUNT(*) as Quantidade
+                FROM 
+                    Software,
+                    (SELECT 1 n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
+                     UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10) n,
+                    (SELECT Codigo, CONCAT(Stack_Tecnologias, ',') as Stack_Item FROM Software) t
+                WHERE 
+                    n.n <= 1 + LENGTH(t.Stack_Item) - LENGTH(REPLACE(t.Stack_Item, ',', ''))
+                    AND Stack_Tecnologias IS NOT NULL
+                GROUP BY Tecnologia
+                ORDER BY Quantidade DESC
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao obter quantidade de softwares por stack: {str(e)}")
+
+    # 22. Project team salary report
+    def relatorio_salarios_por_projeto(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT s.Codigo, s.Nome as Software_Nome,
+                       (SELECT SUM(f.Salario)
+                        FROM Funcionario f
+                        WHERE f.CPF IN (
+                            SELECT ds.Desenvolvedor_CPF
+                            FROM DesenvolvimentoSoftware ds
+                            WHERE ds.Software_Codigo = s.Codigo
+                        ) OR f.CPF IN (
+                            SELECT i.Designer_CPF
+                            FROM IdealizacaoSoftware i
+                            WHERE i.Software_Codigo = s.Codigo
+                        ) OR f.CPF = s.Comercial_CPF
+                       ) as Custo_Total_Salarios,
+                       (SELECT COUNT(*)
+                        FROM (
+                            SELECT ds.Desenvolvedor_CPF as CPF
+                            FROM DesenvolvimentoSoftware ds
+                            WHERE ds.Software_Codigo = s.Codigo
+                            UNION
+                            SELECT i.Designer_CPF as CPF
+                            FROM IdealizacaoSoftware i
+                            WHERE i.Software_Codigo = s.Codigo
+                            UNION
+                            SELECT s.Comercial_CPF as CPF
+                            WHERE s.Comercial_CPF IS NOT NULL
+                        ) as Funcionarios
+                       ) as Total_Funcionarios
+                FROM Software s
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao gerar relatório de salários por projeto: {str(e)}")
+
+    # 23. List clients with more than one contracted software
+    def listar_clientes_multiplos_softwares(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT c.CNPJ, c.Nome, c.Setor_Atuacao, COUNT(s.Codigo) as Quantidade_Softwares
+                FROM Cliente c
+                JOIN Software s ON c.CNPJ = s.Cliente_CNPJ
+                GROUP BY c.CNPJ
+                HAVING COUNT(s.Codigo) > 1
+                ORDER BY Quantidade_Softwares DESC
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao listar clientes com múltiplos softwares: {str(e)}")
+
+    # 24. Report on use of technologies by developers
+    def relatorio_uso_tecnologias_desenvolvedores(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT ds.Desenvolvedor_CPF, f.Nome as Desenvolvedor_Nome, d.Stack as Tecnologias_Dominadas,
+                       GROUP_CONCAT(DISTINCT s.Codigo) as Codigos_Software,
+                       GROUP_CONCAT(DISTINCT s.Nome) as Nomes_Software,
+                       GROUP_CONCAT(DISTINCT s.Stack_Tecnologias) as Tecnologias_Projetos
+                FROM DesenvolvimentoSoftware ds
+                JOIN DesenvolvedorSoftware d ON ds.Desenvolvedor_CPF = d.CPF
+                JOIN Funcionario f ON d.CPF = f.CPF
+                JOIN Software s ON ds.Software_Codigo = s.Codigo
+                GROUP BY ds.Desenvolvedor_CPF
+                ORDER BY f.Nome
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao gerar relatório de uso de tecnologias: {str(e)}")
+
+    # 25. Generate a list of software completed in the last 6 months
+    def listar_softwares_concluidos_recentes(self, meses=6):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT s.Codigo, s.Nome, s.Data_Inicio, s.Data_Entrega,
+                       DATEDIFF(s.Data_Entrega, s.Data_Inicio) as Dias_Desenvolvimento,
+                       c.Nome as Cliente_Nome, c.Setor_Atuacao
+                FROM Software s
+                JOIN Cliente c ON s.Cliente_CNPJ = c.CNPJ
+                WHERE s.Data_Entrega <= CURDATE() 
+                  AND s.Data_Entrega >= DATE_SUB(CURDATE(), INTERVAL %s MONTH)
+                ORDER BY s.Data_Entrega DESC
+                """
+                cursor.execute(sql, (meses,))
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao listar softwares concluídos recentes: {str(e)}")
+
+    # =============================================
+    # Analytical Queries
+    # =============================================
+
+    # 26. Analyze average development time by project type
+    def analisar_tempo_medio_desenvolvimento(self):
+        try:
+            with self.connection.cursor() as cursor:
+                # This query groups by technology stack (might need adjustment based on actual data format)
+                sql = """
+                SELECT 
+                    Stack_Tecnologias,
+                    COUNT(*) as Quantidade_Projetos,
+                    AVG(DATEDIFF(Data_Entrega, Data_Inicio)) as Media_Dias_Desenvolvimento,
+                    MIN(DATEDIFF(Data_Entrega, Data_Inicio)) as Min_Dias,
+                    MAX(DATEDIFF(Data_Entrega, Data_Inicio)) as Max_Dias
+                FROM Software
+                WHERE Data_Inicio IS NOT NULL AND Data_Entrega IS NOT NULL
+                GROUP BY Stack_Tecnologias
+                ORDER BY Media_Dias_Desenvolvimento DESC
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao analisar tempo médio de desenvolvimento: {str(e)}")
+
+    # 27. Analyze developer productivity by software
+    def analisar_produtividade_desenvolvedores(self):
+        try:
+            with self.connection.cursor() as cursor:
+                # 27. (continued) Analyze developer productivity by software
+                sql = """
+                SELECT d.CPF, f.Nome, COUNT(ds.Software_Codigo) as Total_Projetos,
+                       AVG(DATEDIFF(s.Data_Entrega, s.Data_Inicio)) as Media_Dias_Projeto,
+                       SUM(CASE WHEN s.Data_Entrega < CURDATE() THEN 1 ELSE 0 END) as Projetos_Concluidos,
+                       SUM(CASE WHEN s.Data_Entrega >= CURDATE() THEN 1 ELSE 0 END) as Projetos_Em_Andamento
+                FROM DesenvolvedorSoftware d
+                JOIN Funcionario f ON d.CPF = f.CPF
+                JOIN DesenvolvimentoSoftware ds ON d.CPF = ds.Desenvolvedor_CPF
+                JOIN Software s ON ds.Software_Codigo = s.Codigo
+                WHERE s.Data_Inicio IS NOT NULL AND s.Data_Entrega IS NOT NULL
+                GROUP BY d.CPF
+                ORDER BY Total_Projetos DESC, Media_Dias_Projeto ASC
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao analisar produtividade dos desenvolvedores: {str(e)}")
+
+    # 28. Identify most used technology stacks
+    def identificar_stacks_mais_utilizadas(self):
+        try:
+            with self.connection.cursor() as cursor:
+                # Similar to query 21, but with more details
+                sql = """
+                SELECT 
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(t.Stack_Item, ',', n.n), ',', -1) as Tecnologia,
+                    COUNT(*) as Quantidade,
+                    COUNT(*) * 100.0 / (SELECT COUNT(*) FROM Software WHERE Stack_Tecnologias IS NOT NULL) as Porcentagem,
+                    GROUP_CONCAT(DISTINCT t.Codigo ORDER BY t.Codigo SEPARATOR ', ') as Softwares
+                FROM 
+                    (SELECT 1 n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
+                     UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10) n,
+                    (SELECT Codigo, CONCAT(Stack_Tecnologias, ',') as Stack_Item FROM Software) t
+                WHERE 
+                    n.n <= 1 + LENGTH(t.Stack_Item) - LENGTH(REPLACE(t.Stack_Item, ',', ''))
+                    AND Stack_Item IS NOT NULL
+                GROUP BY Tecnologia
+                ORDER BY Quantidade DESC
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao identificar stacks mais utilizadas: {str(e)}")
+
+    # 29. Analyze sales performance by sales volume
+    def analisar_desempenho_comerciais(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT c.CPF, f.Nome, c.Nivel_Persuasao,
+                       COUNT(s.Codigo) as Total_Vendas,
+                       COUNT(DISTINCT s.Cliente_CNPJ) as Total_Clientes_Distintos,
+                       AVG(DATEDIFF(s.Data_Entrega, s.Data_Inicio)) as Media_Duracao_Projetos
+                FROM Comercial c
+                JOIN Funcionario f ON c.CPF = f.CPF
+                LEFT JOIN Software s ON c.CPF = s.Comercial_CPF
+                GROUP BY c.CPF
+                ORDER BY Total_Vendas DESC, Nivel_Persuasao DESC
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao analisar desempenho dos comerciais: {str(e)}")
+
+    # 30. Identify most profitable client sectors
+    def identificar_setores_lucrativos(self):
+        try:
+            with self.connection.cursor() as cursor:
+                # This query assumes some way to calculate profit, using count as a proxy
+                sql = """
+                SELECT c.Setor_Atuacao, 
+                       COUNT(s.Codigo) as Total_Softwares,
+                       COUNT(DISTINCT c.CNPJ) as Total_Clientes,
+                       AVG(DATEDIFF(s.Data_Entrega, s.Data_Inicio)) as Media_Duracao_Dias
+                FROM Cliente c
+                JOIN Software s ON c.CNPJ = s.Cliente_CNPJ
+                GROUP BY c.Setor_Atuacao
+                ORDER BY Total_Softwares DESC
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao identificar setores mais lucrativos: {str(e)}")
+
+    # =============================================
+    # Control and Validation Queries
+    # =============================================
+
+    # 31. Validate if all software has at least one developer associated
+    def validar_softwares_sem_desenvolvedores(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT s.Codigo, s.Nome, s.Data_Inicio, s.Data_Entrega, c.Nome as Cliente_Nome
+                FROM Software s
+                JOIN Cliente c ON s.Cliente_CNPJ = c.CNPJ
+                LEFT JOIN DesenvolvimentoSoftware ds ON s.Codigo = ds.Software_Codigo
+                WHERE ds.Desenvolvedor_CPF IS NULL
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao validar softwares sem desenvolvedores: {str(e)}")
+
+    # 32. Check if all clients have registered software
+    def verificar_clientes_sem_softwares(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT c.CNPJ, c.Nome, c.Setor_Atuacao
+                FROM Cliente c
+                LEFT JOIN Software s ON c.CNPJ = s.Cliente_CNPJ
+                WHERE s.Codigo IS NULL
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao verificar clientes sem softwares: {str(e)}")
+
+    # 33. Identify employees with no associated projects
+    def identificar_funcionarios_sem_projetos(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT f.CPF, f.Nome, f.Cargo
+                FROM Funcionario f
+                LEFT JOIN (
+                    SELECT ds.Desenvolvedor_CPF as CPF
+                    FROM DesenvolvimentoSoftware ds
+                    UNION
+                    SELECT i.Designer_CPF as CPF
+                    FROM IdealizacaoSoftware i
+                    UNION
+                    SELECT s.Comercial_CPF as CPF
+                    FROM Software s
+                    WHERE s.Comercial_CPF IS NOT NULL
+                ) as Projetos ON f.CPF = Projetos.CPF
+                WHERE Projetos.CPF IS NULL
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao identificar funcionários sem projetos: {str(e)}")
+
+    # 34. Check the integrity of relationships between entities
+    def verificar_integridade_relacionamentos(self):
+        try:
+            with self.connection.cursor() as cursor:
+                # Check software without clients or sales staff
+                sql_software = """
+                SELECT s.Codigo, s.Nome, 
+                       CASE WHEN s.Cliente_CNPJ IS NULL THEN 'Sem Cliente' ELSE 'OK' END as Status_Cliente,
+                       CASE WHEN s.Comercial_CPF IS NULL THEN 'Sem Comercial' ELSE 'OK' END as Status_Comercial
+                FROM Software s
+                WHERE s.Cliente_CNPJ IS NULL OR s.Comercial_CPF IS NULL
+                """
+                cursor.execute(sql_software)
+                softwares_problematicos = cursor.fetchall()
+
+                # Check for orphaned records in relationship tables
+                sql_dev = """
+                SELECT ds.Desenvolvedor_CPF, ds.Software_Codigo
+                FROM DesenvolvimentoSoftware ds
+                LEFT JOIN DesenvolvedorSoftware d ON ds.Desenvolvedor_CPF = d.CPF
+                LEFT JOIN Software s ON ds.Software_Codigo = s.Codigo
+                WHERE d.CPF IS NULL OR s.Codigo IS NULL
+                """
+                cursor.execute(sql_dev)
+                desenvolvedores_problematicos = cursor.fetchall()
+
+                sql_designer = """
+                SELECT i.Designer_CPF, i.Software_Codigo
+                FROM IdealizacaoSoftware i
+                LEFT JOIN Designer d ON i.Designer_CPF = d.CPF
+                LEFT JOIN Software s ON i.Software_Codigo = s.Codigo
+                WHERE d.CPF IS NULL OR s.Codigo IS NULL
+                """
+                cursor.execute(sql_designer)
+                designers_problematicos = cursor.fetchall()
+
+                return {
+                    'softwares_problematicos': softwares_problematicos,
+                    'desenvolvedores_problematicos': desenvolvedores_problematicos,
+                    'designers_problematicos': designers_problematicos
+                }
+        except Exception as e:
+            raise Exception(f"Erro ao verificar integridade dos relacionamentos: {str(e)}")
+
+    # 35. Query the current status of all projects
+    def consultar_status_projetos(self):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                SELECT s.Codigo, s.Nome, s.Data_Inicio, s.Data_Entrega,
+                       c.Nome as Cliente_Nome,
+                       CASE 
+                           WHEN s.Data_Inicio IS NULL THEN 'Não Iniciado'
+                           WHEN s.Data_Entrega IS NULL THEN 'Em Definição'
+                           WHEN s.Data_Entrega < CURDATE() THEN 'Concluído'
+                           WHEN DATEDIFF(s.Data_Entrega, CURDATE()) <= 7 THEN 'Entrega Próxima'
+                           ELSE 'Em Andamento' 
+                       END as Status,
+                       CASE
+                           WHEN s.Data_Inicio IS NULL OR s.Data_Entrega IS NULL THEN 0
+                           WHEN s.Data_Entrega < CURDATE() THEN 100
+                           ELSE ROUND(
+                               (DATEDIFF(CURDATE(), s.Data_Inicio) * 100.0) / 
+                               NULLIF(DATEDIFF(s.Data_Entrega, s.Data_Inicio), 0)
+                           )
+                       END as Porcentagem_Conclusao
+                FROM Software s
+                JOIN Cliente c ON s.Cliente_CNPJ = c.CNPJ
+                ORDER BY 
+                    CASE 
+                        WHEN s.Data_Entrega < CURDATE() THEN 3
+                        WHEN DATEDIFF(s.Data_Entrega, CURDATE()) <= 7 THEN 1
+                        WHEN s.Data_Inicio IS NULL THEN 4
+                        ELSE 2
+                    END,
+                    s.Data_Entrega
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            raise Exception(f"Erro ao consultar status dos projetos: {str(e)}")
+
+    # =============================================
+    # Helper methods for connecting software with employees
+    # =============================================
+
+    # Associate a developer with a software
+    def associar_desenvolvedor_software(self, desenvolvedor_cpf, software_codigo):
+        try:
+            with self.connection.cursor() as cursor:
+                # Check if developer exists
+                check_dev = "SELECT CPF FROM DesenvolvedorSoftware WHERE CPF = %s"
+                cursor.execute(check_dev, (desenvolvedor_cpf,))
+                if not cursor.fetchone():
+                    raise Exception(f"Desenvolvedor com CPF {desenvolvedor_cpf} não encontrado")
+
+                # Check if software exists
+                check_sw = "SELECT Codigo FROM Software WHERE Codigo = %s"
+                cursor.execute(check_sw, (software_codigo,))
+                if not cursor.fetchone():
+                    raise Exception(f"Software com Código {software_codigo} não encontrado")
+
+                # Create association
+                sql = """
+                INSERT INTO DesenvolvimentoSoftware (Desenvolvedor_CPF, Software_Codigo)
+                VALUES (%s, %s)
+                """
+                cursor.execute(sql, (desenvolvedor_cpf, software_codigo))
+                self.connection.commit()
+                return True
+        except pymysql.err.IntegrityError:
+            # Association already exists
+            return False
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao associar desenvolvedor ao software: {str(e)}")
+
+    # Associate a designer with a software
+    def associar_designer_software(self, designer_cpf, software_codigo):
+        try:
+            with self.connection.cursor() as cursor:
+                # Check if designer exists
+                check_des = "SELECT CPF FROM Designer WHERE CPF = %s"
+                cursor.execute(check_des, (designer_cpf,))
+                if not cursor.fetchone():
+                    raise Exception(f"Designer com CPF {designer_cpf} não encontrado")
+
+                # Check if software exists
+                check_sw = "SELECT Codigo FROM Software WHERE Codigo = %s"
+                cursor.execute(check_sw, (software_codigo,))
+                if not cursor.fetchone():
+                    raise Exception(f"Software com Código {software_codigo} não encontrado")
+
+                # Create association
+                sql = """
+                INSERT INTO IdealizacaoSoftware (Designer_CPF, Software_Codigo)
+                VALUES (%s, %s)
+                """
+                cursor.execute(sql, (designer_cpf, software_codigo))
+                self.connection.commit()
+                return True
+        except pymysql.err.IntegrityError:
+            # Association already exists
+            return False
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao associar designer ao software: {str(e)}")
+
+    # Remove association between developer and software
+    def remover_desenvolvedor_software(self, desenvolvedor_cpf, software_codigo):
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                DELETE FROM DesenvolvimentoSoftware 
+                WHERE Desenvolvedor_CPF = %s AND Software_Codigo = %s
+                """
+                cursor.execute(sql, (desenvolvedor_cpf, software_codigo))
+                self.connection.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao remover desenvolvedor do software: {str(e)}")
+
+    # Remove association between designer and software
+    def remover_designer_software(self, designer_cpf, software_codigo):
+        # Remove association between designer and software (continued)
+        try:
+            with self.connection.cursor() as cursor:
+                sql = """
+                            DELETE FROM IdealizacaoSoftware 
+                            WHERE Designer_CPF = %s AND Software_Codigo = %s
+                            """
+                cursor.execute(sql, (designer_cpf, software_codigo))
+                self.connection.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            self.connection.rollback()
+            raise Exception(f"Erro ao remover designer do software: {str(e)}")
+
+    # Example usage
+
+
 if __name__ == "__main__":
-    app = DatabaseApp()
+    try:
+        # Create an instance of the database manager
+        db = SoftwareDBManager(host='localhost', user='root', password='password', database='SoftwareDB')
+
+        # Example of adding a client
+        cnpj = "12.345.678/0001-99"
+        db.cadastrar_cliente(cnpj, "Empresa XYZ", "Tecnologia")
+
+        # Example of adding an employee
+        cpf = "123.456.789-00"
+        db.registrar_funcionario(
+            cpf, "João Silva", 30, "desenvolvedor",
+            5000.00, {"stack": "Python, JavaScript, SQL"}
+        )
+
+        # Example of adding a software
+        software_id = db.adicionar_software(
+            "Sistema ERP",
+            "Python, Django, React",
+            "2025-01-15",
+            "2025-06-30",
+            "Gestão financeira, Controle de estoque, RH",
+            None,  # comercial_cpf
+            cnpj
+        )
+
+        # Associate developer with software
+        db.associar_desenvolvedor_software(cpf, software_id)
+
+        # Query all software for a client
+        softwares = db.listar_softwares_por_cliente(cnpj)
+        for sw in softwares:
+            print(f"Software: {sw['Nome']}, Início: {sw['Data_Inicio']}, Entrega: {sw['Data_Entrega']}")
+
+        # Generate a report of project status
+        status = db.consultar_status_projetos()
+        for projeto in status:
+            print(f"Projeto: {projeto['Nome']}, Status: {projeto['Status']}, "
+                  f"Conclusão: {projeto['Porcentagem_Conclusao']}%")
+
+        print("Database operations completed successfully!")
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
